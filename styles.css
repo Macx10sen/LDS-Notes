@@ -158,6 +158,29 @@ button, input, textarea { font: inherit; color: inherit; }
   min-height: 92px;
 }
 .new-btn:active { background: var(--band); }
+.new-btn.type-study { grid-column: 1 / -1; min-height: 72px; }
+.new-btn[aria-expanded="true"] { border-color: var(--rule-strong); }
+
+.kind-picker {
+  grid-column: 1 / -1;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px 14px;
+  border-radius: 14px;
+  background: var(--band);
+}
+.kind-buttons { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.kind-btn {
+  border: 1px solid var(--rule);
+  background: var(--card);
+  border-radius: 10px;
+  padding: 12px 8px;
+  font-family: var(--serif);
+  font-size: 17px;
+  cursor: pointer;
+}
+.kind-btn:active { background: var(--paper); }
 .new-btn .plus {
   grid-row: 1 / 3;
   width: 36px;
@@ -232,6 +255,7 @@ button, input, textarea { font: inherit; color: inherit; }
   text-decoration: none;
 }
 .note-card.type-meeting { border-left-color: var(--accent); }
+.note-card.type-study { border-left-color: var(--focus); }
 .note-card:active { background: var(--band); }
 .kicker {
   font-family: var(--serif);
@@ -550,6 +574,21 @@ button, input, textarea { font: inherit; color: inherit; }
 }
 .block-title { font-size: 24px; margin: 6px 0 0; }
 
+/* Study week: one tab per day */
+.block-tabs.day-tabs button {
+  position: relative;
+  flex-direction: column;
+  gap: 0;
+  padding: 6px 0;
+  min-width: 0;
+  line-height: 1.15;
+}
+.day-tabs .tab-top { font-size: 11px; letter-spacing: 0.06em; text-transform: uppercase; }
+.day-tabs .tab-bottom { font-family: var(--serif); font-size: 18px; }
+.day-tabs .filled-dot { position: absolute; top: 5px; right: 5px; width: 6px; height: 6px; }
+
+.choice { margin-top: 8px; }
+
 /* Hear Him */
 .hear-him .count {
   font-family: var(--serif);
@@ -619,3 +658,5 @@ button, input, textarea { font: inherit; color: inherit; }
 @media print {
   .editor-bar, .tabs-wrap, .editor-foot, .add-btn, .icon-btn { display: none; }
 }
+
+.when-item:only-child { grid-column: 1 / -1; }
