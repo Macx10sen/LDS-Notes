@@ -1,11 +1,76 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
-  <rect width="512" height="512" fill="#f7f2e8"/>
-  <g fill="none" stroke="#2b2925" stroke-width="14" stroke-linecap="round" stroke-linejoin="round">
-    <path d="M256 170c-38-26-86-34-136-28v196c50-6 98 2 136 28 38-26 86-34 136-28V142c-50-6-98 2-136 28z"/>
-    <path d="M256 170v196"/>
-  </g>
-  <g stroke="#9a9286" stroke-width="8" stroke-linecap="round">
-    <path d="M152 196c28-2 52 2 72 12M152 236c28-2 52 2 72 12M152 276c28-2 52 2 72 12"/>
-    <path d="M288 208c20-10 44-14 72-12M288 248c20-10 44-14 72-12M288 288c20-10 44-14 72-12"/>
+  <defs>
+    <radialGradient id="glow" cx="256" cy="150" r="230" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#fcf6e8"/>
+      <stop offset="0.5" stop-color="#efe2c6"/>
+      <stop offset="1" stop-color="#dfcca8"/>
+    </radialGradient>
+  </defs>
+  <rect width="512" height="512" fill="url(#glow)"/>
+  <g transform="translate(256 262) scale(0.9) translate(-256 -246)"
+     stroke="#4a3221" stroke-linejoin="round" stroke-linecap="round">
+    <!-- soft rays of light -->
+    <g stroke="#c4a273" stroke-width="3" opacity=".55" fill="none">
+      <path d="M256 60 L256 34"/><path d="M206 74 L192 52"/><path d="M306 74 L320 52"/>
+      <path d="M172 106 L150 94"/><path d="M340 106 L362 94"/>
+    </g>
+    <circle cx="256" cy="120" r="46" fill="#fbf3e2" stroke="#c4a273" stroke-width="3"/>
+    <!-- mantle with open sleeves, arms outstretched -->
+    <path d="M236 162 C212 166 182 186 150 218 L134 236 L146 252 C164 254 180 264 192 286
+             C200 306 204 332 206 360 L306 360 C308 332 312 306 320 286 C332 264 348 254 366 252
+             L378 236 L362 218 C330 186 300 166 276 162 Z"
+          fill="#f1e4ca" stroke-width="6"/>
+    <!-- inner robe -->
+    <path d="M238 166 L274 166 C284 172 290 186 292 204 L300 360 L212 360 L220 204 C222 186 228 172 238 166 Z"
+          fill="#fbf5e9" stroke-width="5"/>
+    <!-- drapery, engraved -->
+    <g fill="none" stroke="#7d5c3e" stroke-width="3">
+      <path d="M224 176 C200 190 180 206 160 226"/>
+      <path d="M288 176 C312 190 332 206 352 226"/>
+      <path d="M170 244 C182 256 192 272 198 294"/>
+      <path d="M342 244 C330 256 320 272 314 294"/>
+      <path d="M238 176 C256 210 276 246 296 290"/>
+      <path d="M250 214 C246 250 242 290 240 330"/>
+      <path d="M266 248 C268 280 270 306 272 330"/>
+    </g>
+    <!-- open hands, palms forward -->
+    <path d="M134 236 C126 240 120 248 116 258 C114 264 118 268 122 266 C124 270 128 271 131 268
+             C133 272 137 272 140 268 C143 270 147 268 147 264 L146 252 Z" fill="#f8efdd" stroke-width="4"/>
+    <path d="M378 236 C386 240 392 248 396 258 C398 264 394 268 390 266 C388 270 384 271 381 268
+             C379 272 375 272 372 268 C369 270 365 268 365 264 L366 252 Z" fill="#f8efdd" stroke-width="4"/>
+    <!-- face -->
+    <ellipse cx="256" cy="121" rx="15" ry="20" fill="#f8efdd" stroke-width="3"/>
+    <g fill="none" stroke="#4a3221" stroke-width="2.5">
+      <path d="M248 117 L253 117"/><path d="M259 117 L264 117"/>
+      <path d="M256 119 L254.5 127 L257 128"/>
+    </g>
+    <!-- hair, parted, framing the face to the shoulders -->
+    <path d="M256 90 C236 90 229 104 230 122 C231 140 227 156 220 168 C229 173 238 171 245 164
+             C242 150 241 134 242 121 C244 108 250 102 256 101 C262 102 268 108 270 121
+             C271 134 270 150 267 164 C274 171 283 173 292 168 C285 156 281 140 282 122 C283 104 276 90 256 90 Z"
+          fill="#7a5636" stroke-width="3.5"/>
+    <g fill="none" stroke="#b08a5a" stroke-width="2">
+      <path d="M252 94 C242 98 236 110 236 128 C236 142 233 154 228 164"/>
+      <path d="M260 94 C270 98 276 110 276 128 C276 142 279 154 284 164"/>
+    </g>
+    <!-- beard -->
+    <path d="M242 126 C243 145 250 153 256 154 C262 153 269 145 270 126 C265 136 261 139 256 139
+             C251 139 247 136 242 126 Z" fill="#7a5636" stroke-width="3"/>
+    <path d="M249 132 C252 130 260 130 263 132" fill="none" stroke="#4a3221" stroke-width="2.5"/>
+    <!-- open notebook across the lower half -->
+    <path d="M256 300 C222 280 166 274 102 282 L102 420 C166 412 222 418 256 440
+             C290 418 346 412 410 420 L410 282 C346 274 290 280 256 300 Z"
+          fill="#fbf5e9" stroke-width="6.5"/>
+    <path d="M256 300 L256 440" fill="none" stroke-width="5"/>
+    <g fill="none" stroke="#7d5c3e" stroke-width="3.5">
+      <path d="M124 312 C164 308 204 312 234 326"/>
+      <path d="M124 340 C164 336 204 340 234 354"/>
+      <path d="M124 368 C164 364 204 368 234 382"/>
+      <path d="M124 396 C164 392 204 396 234 410"/>
+      <path d="M278 326 C308 312 348 308 388 312"/>
+      <path d="M278 354 C308 340 348 336 388 340"/>
+      <path d="M278 382 C308 368 348 364 388 368"/>
+      <path d="M278 410 C308 396 348 392 388 396"/>
+    </g>
   </g>
 </svg>
