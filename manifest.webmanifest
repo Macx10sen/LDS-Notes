@@ -1,6 +1,6 @@
 {
-  "name": "Church Notes",
-  "short_name": "Church Notes",
+  "name": "Latter Day Notebook",
+  "short_name": "Latter Day Notebook",
   "description": "Take notes in sacrament meeting, second hour, and conference.",
   "start_url": "./",
   "scope": "./",

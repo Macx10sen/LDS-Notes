@@ -308,7 +308,7 @@
 
   function renderHome() {
     leaveEditor();
-    document.title = 'Church Notes';
+    document.title = 'Latter Day Notebook';
     const list = h('div', { class: 'note-list' });
 
     function draw() {
@@ -367,7 +367,7 @@
     app.replaceChildren(
       h('div', { class: 'home' },
         h('header', { class: 'home-head' },
-          h('h1', { class: 'display' }, 'Church', h('br'), 'Notes'),
+          h('h1', { class: 'display' }, 'Latter Day', h('br'), 'Notebook'),
           h('p', { class: 'sub' }, fmtDate(isoDate(new Date()), true))
         ),
         h('div', { class: 'new-grid' },
@@ -492,8 +492,8 @@
   /* ---------- backup ---------- */
 
   function exportBackup() {
-    const json = JSON.stringify({ app: 'church-notes', version: 1, exported: new Date().toISOString(), notes: Store.all() }, null, 2);
-    const name = `church-notes-backup-${isoDate(new Date())}.json`;
+    const json = JSON.stringify({ app: 'latter-day-notebook', version: 1, exported: new Date().toISOString(), notes: Store.all() }, null, 2);
+    const name = `latter-day-notebook-backup-${isoDate(new Date())}.json`;
     const blob = new Blob([json], { type: 'application/json' });
     let file;
     try { file = new File([blob], name, { type: 'application/json' }); } catch (e) { /* old browsers */ }
@@ -530,7 +530,7 @@
         toast(`Restored ${added} new note${added === 1 ? '' : 's'}${updated ? `, updated ${updated}` : ''}.`);
         renderHome();
       }
-    }).catch(() => toast('That file is not a Church Notes backup.'));
+    }).catch(() => toast('That file is not a Latter Day Notebook backup.'));
   }
 
   /* ---------- editor ---------- */
@@ -852,7 +852,7 @@
     const schema = SCHEMAS[note.type];
     if (!(id in blockByNote)) blockByNote[id] = schema.defaultBlock ? schema.defaultBlock(note.data) : 0;
     current = { note, timer: null, page: Math.min(pageByNote[id] || 0, schema.pages.length - 1), block: blockByNote[id] };
-    document.title = `${schema.label} · Church Notes`;
+    document.title = `${schema.label} · Latter Day Notebook`;
     const d = note.data;
 
     const W = schema.when || { date: 'Date', time: true, location: true };
