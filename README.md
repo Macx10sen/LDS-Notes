@@ -1,4 +1,4 @@
-# Church Notes
+# Latter Day Notebook
 
 A phone app for taking notes at church. Its layout follows a paper note-taking notebook, with three kinds of notes:
 
