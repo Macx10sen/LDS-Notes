@@ -42,4 +42,5 @@ python3 -m http.server 8000   # then open http://localhost:8000
 - `schema.js` is the layout of each note type. Add, remove or rename fields here.
 - `app.js` holds storage, the screens, sharing and backup.
 - `styles.css` is the notebook look.
-- `sw.js` is offline caching. **Bump `VERSION`** whenever you change app files so phones pick up the update.
+- `sw.js` handles offline use. It uses the network when there's signal (waiting at most 3 seconds) and the saved copy otherwise. Bump `VERSION` when you change app files.
+- Android's bottom gesture bar takes its color from `theme_color` in `manifest.webmanifest`, not from the Appearance setting. Chrome only picks up a change after an app update or a reinstall.

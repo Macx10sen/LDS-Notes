@@ -1,6 +1,7 @@
-// Offline support: serve the app from cache, refresh the cache in the background.
+// Offline support: use the network when it's available (so updates show up right
+// away) and fall back to the saved copy when offline.
 // Bump VERSION whenever app files change so phones pick up the update.
-const VERSION = 'church-notes-v5';
+const VERSION = 'church-notes-v6';
 const ASSETS = [
   './',
   './index.html',
@@ -26,17 +27,30 @@ self.addEventListener('activate', (e) => {
   );
 });
 
+// Use the network, but don't wait more than a few seconds on weak signal.
+const NETWORK_TIMEOUT_MS = 3000;
+
 self.addEventListener('fetch', (e) => {
   const req = e.request;
   if (req.method !== 'GET' || new URL(req.url).origin !== location.origin) return;
-  e.respondWith(
-    caches.open(VERSION).then((cache) =>
-      cache.match(req, { ignoreSearch: true }).then((cached) => {
-        const fresh = fetch(req)
-          .then((res) => { if (res.ok) cache.put(req, res.clone()); return res; })
-          .catch(() => cached);
-        return cached || fresh;
-      })
-    )
-  );
+
+  const fromCache = () =>
+    caches.match(req, { ignoreSearch: true }).then((hit) => hit || caches.match('./index.html'));
+
+  const fromNetwork = fetch(req, { cache: 'no-cache' }).then((res) => {
+    if (res.ok) {
+      const copy = res.clone();
+      caches.open(VERSION).then((cache) => cache.put(req, copy));
+    }
+    return res;
+  });
+
+  e.respondWith(new Promise((resolve) => {
+    let done = false;
+    const finish = (res) => { if (!done && res) { done = true; resolve(res); } };
+    const timer = setTimeout(() => fromCache().then(finish), NETWORK_TIMEOUT_MS);
+    fromNetwork
+      .then((res) => { clearTimeout(timer); finish(res); })
+      .catch(() => { clearTimeout(timer); fromCache().then((hit) => finish(hit || Response.error())); });
+  }));
 });
