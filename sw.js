@@ -1,7 +1,7 @@
 // Offline support: use the network when it's available (so updates show up right
 // away) and fall back to the saved copy when offline.
 // Bump VERSION whenever app files change so phones pick up the update.
-const VERSION = 'latter-day-notebook-v14';
+const VERSION = 'latter-day-notebook-v15';
 const ASSETS = [
   './',
   './index.html',
