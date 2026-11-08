@@ -78,6 +78,9 @@
 
 * { box-sizing: border-box; }
 
+/* Elements marked hidden stay hidden even when a class sets display. */
+[hidden] { display: none !important; }
+
 html { -webkit-text-size-adjust: 100%; background: var(--paper); }
 
 body {
