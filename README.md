@@ -20,7 +20,7 @@ Sunday and Meeting notes also have a date, time and location. A Daily Study note
 - Tap circles for **Hear Him**.
 - Search all notes and filter by Sundays or Meetings.
 - **Share** sends a note as plain text to Messages, email, Notes and similar apps.
-- **Back up / Restore** saves all notes to a `.json` file, for example in Files or Google Drive, and loads them back.
+- **Back up / Restore** saves all notes to a file and loads them back. Back up opens the phone's share sheet (choose Save to Files, Drive or email). On Android the file may be a `.txt`, because Android only shares certain file types. Restore accepts either `.json` or `.txt`. Backups don't work in the claude.ai preview.
 - Empty notes are thrown away when you leave them.
 
 Notes are stored **only on the phone** (in the browser's local storage). Nothing is sent anywhere. Back up now and then.
