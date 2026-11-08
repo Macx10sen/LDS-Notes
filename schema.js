@@ -11,6 +11,8 @@
  *            toggle: a checkbox in the heading, stored at data[toggle.key]
  *   hearHim  row of tap-to-fill circles  data[key] = number
  *   cta      Read / Pray / Share about   data[key] = { read:{on,text}, pray:{…}, share:{…} }
+ *   blocks   the same fields repeated once per label, one shown at a time
+ *            data[key] = [ {…fields for labels[0]}, {…fields for labels[1]} ]
  *   row      children side by side on wide screens, stacked on phones
  *   col      children stacked (used inside a row)
  *
@@ -74,44 +76,46 @@
           fields: [
             { type: 'lines', key: 'announcements', label: 'Announcements', rows: 2 },
             {
-              type: 'row',
+              type: 'blocks',
+              key: 'blocks',
+              labels: ['First Block', 'Second Block'],
               fields: [
                 {
-                  type: 'col',
+                  type: 'row',
                   fields: [
                     {
-                      type: 'checks',
-                      key: 'class',
-                      label: "Today's Class",
-                      options: [
-                        'Sunday School',
-                        'Relief Society / Elders Quorum',
-                        'Young Women / Young Men',
+                      type: 'col',
+                      fields: [
+                        {
+                          type: 'checks',
+                          key: 'class',
+                          label: "Today's Class",
+                          options: [
+                            'Sunday School',
+                            'Relief Society / Elders Quorum',
+                            'Young Women / Young Men',
+                          ],
+                          other: true,
+                          detail: { key: 'teacher', placeholder: 'Teacher' },
+                        },
+                        {
+                          type: 'checks',
+                          key: 'lesson',
+                          label: "Today's Lesson",
+                          options: ['Come, Follow Me', 'General Conference Talk'],
+                          other: true,
+                          detail: { key: 'lessonTitle', placeholder: 'Lesson or talk title' },
+                        },
                       ],
-                      other: true,
-                      detail: { key: 'teacher', placeholder: 'Teacher' },
                     },
-                    {
-                      type: 'checks',
-                      key: 'lesson',
-                      label: "Today's Lesson",
-                      options: ['Come, Follow Me', 'General Conference Talk'],
-                      other: true,
-                      detail: { key: 'lessonTitle', placeholder: 'Lesson or talk title' },
-                    },
+                    { type: 'lines', key: 'somethingILoved', label: 'Something I Loved', rows: 5 },
                   ],
                 },
-                { type: 'lines', key: 'somethingILoved', label: 'Something I Loved', rows: 6 },
+                { type: 'lines', key: 'notes', label: 'Notes / Impressions', rows: 8 },
+                { type: 'lines', key: 'promptings', label: 'Promptings / Takeaways', rows: 3 },
               ],
             },
-            { type: 'lines', key: 'secondHourNotes', label: 'Notes / Impressions', rows: 8 },
-            {
-              type: 'row',
-              fields: [
-                { type: 'lines', key: 'secondHourPromptings', label: 'Promptings / Takeaways', rows: 3 },
-                { type: 'lines', key: 'lookingForward', label: 'Looking Forward', rows: 3 },
-              ],
-            },
+            { type: 'lines', key: 'lookingForward', label: 'Looking Forward', rows: 3 },
             { type: 'cta', key: 'callToAction', label: 'Call to Action' },
           ],
         },

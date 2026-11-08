@@ -66,6 +66,24 @@
     return fields.flatMap((f) => (f.type === 'row' || f.type === 'col' ? flatFields(f.fields) : [f]));
   }
 
+  // Older Sunday notes had a single Second Hour class; move it into First Block.
+  const OLD_SECOND_HOUR = {
+    class: 'class', teacher: 'teacher', lesson: 'lesson', lessonTitle: 'lessonTitle',
+    somethingILoved: 'somethingILoved', secondHourNotes: 'notes', secondHourPromptings: 'promptings',
+  };
+  function migrate(n) {
+    if (!n || n.type !== 'sunday' || !n.data || Array.isArray(n.data.blocks)) return n;
+    const first = {};
+    for (const [oldKey, newKey] of Object.entries(OLD_SECOND_HOUR)) {
+      if (oldKey in n.data) {
+        first[newKey] = n.data[oldKey];
+        delete n.data[oldKey];
+      }
+    }
+    n.data.blocks = [first, {}];
+    return n;
+  }
+
   let toastTimer;
   function toast(msg) {
     let el = document.getElementById('toast');
@@ -100,7 +118,7 @@
     all() {
       try {
         const v = JSON.parse(localStorage.getItem(STORE_KEY));
-        return Array.isArray(v) ? v : [];
+        return Array.isArray(v) ? v.map(migrate) : [];
       } catch (e) {
         return [];
       }
@@ -150,10 +168,10 @@
         title: sess.length ? sess.join(', ') : 'Meeting Notes',
       };
     }
-    const lesson = d.lessonTitle && d.lessonTitle.trim();
+    const lessons = (d.blocks || []).map((b) => (b && b.lessonTitle ? b.lessonTitle.trim() : '')).filter(Boolean);
     return {
       kicker: d.testimonyMeeting ? 'Sunday · Testimony Meeting' : 'Sunday',
-      title: lesson || 'Sacrament & Second Hour',
+      title: lessons.join(' · ') || 'Sacrament & Second Hour',
     };
   }
 
@@ -167,6 +185,52 @@
     return '';
   }
 
+  function fieldsText(fields, d) {
+    const body = [];
+    for (const f of flatFields(fields)) {
+      const v = d[f.key];
+      if (f.type === 'blocks') {
+        f.labels.forEach((label, i) => {
+          const sub = fieldsText(f.fields, (v && v[i]) || {});
+          if (sub.length) body.push(`— ${label} —`, ...sub);
+        });
+      } else if (f.type === 'line' || f.type === 'lines') {
+        if (hasContent(v)) body.push(`${f.label}${f.sublabel ? ' (' + f.sublabel + ')' : ''}:\n${v.trim()}`);
+      } else if (f.type === 'checks') {
+        const parts = checksText(v);
+        const detail = f.detail && d[f.detail.key] && d[f.detail.key].trim();
+        if (parts.length || detail) {
+          body.push(`${f.label}: ${parts.join(', ')}${detail ? (parts.length ? ' — ' : '') + detail : ''}`);
+        }
+      } else if (f.type === 'speakers') {
+        const list = (v || []).filter(hasContent);
+        const flag = f.toggle && d[f.toggle.key];
+        if (list.length || flag) {
+          const lines = [`${f.label}${flag ? ' (' + f.toggle.label + ')' : ''}:`];
+          for (const s of list) {
+            lines.push(`• ${[s.name, s.topic].filter((x) => x && x.trim()).join(' — ')}`);
+            if (s.notes && s.notes.trim()) lines.push(s.notes.trim().replace(/^/gm, '   '));
+          }
+          body.push(lines.join('\n'));
+        }
+      } else if (f.type === 'hearHim') {
+        if (v) body.push(`${f.label}: ${v}`);
+      } else if (f.type === 'cta') {
+        if (hasContent(v)) {
+          const lines = [`${f.label}:`];
+          for (const [k, label] of CTA_ITEMS) {
+            const item = v[k] || {};
+            if (item.on || (item.text && item.text.trim())) {
+              lines.push(`${item.on ? '☑' : '☐'} ${label}${item.text ? ': ' + item.text.trim() : ''}`);
+            }
+          }
+          body.push(lines.join('\n'));
+        }
+      }
+    }
+    return body;
+  }
+
   function noteToText(note) {
     const d = note.data;
     const desc = describe(note);
@@ -174,43 +238,7 @@
     out.push([fmtDate(d.date, true), fmtTime(d.time), d.location].filter(Boolean).join(' · '));
 
     for (const page of SCHEMAS[note.type].pages) {
-      const body = [];
-      for (const f of flatFields(page.fields)) {
-        const v = d[f.key];
-        if (f.type === 'line' || f.type === 'lines') {
-          if (hasContent(v)) body.push(`${f.label}${f.sublabel ? ' (' + f.sublabel + ')' : ''}:\n${v.trim()}`);
-        } else if (f.type === 'checks') {
-          const parts = checksText(v);
-          const detail = f.detail && d[f.detail.key] && d[f.detail.key].trim();
-          if (parts.length || detail) {
-            body.push(`${f.label}: ${parts.join(', ')}${detail ? (parts.length ? ' — ' : '') + detail : ''}`);
-          }
-        } else if (f.type === 'speakers') {
-          const list = (v || []).filter(hasContent);
-          const flag = f.toggle && d[f.toggle.key];
-          if (list.length || flag) {
-            const lines = [`${f.label}${flag ? ' (' + f.toggle.label + ')' : ''}:`];
-            for (const s of list) {
-              lines.push(`• ${[s.name, s.topic].filter((x) => x && x.trim()).join(' — ')}`);
-              if (s.notes && s.notes.trim()) lines.push(s.notes.trim().replace(/^/gm, '   '));
-            }
-            body.push(lines.join('\n'));
-          }
-        } else if (f.type === 'hearHim') {
-          if (v) body.push(`${f.label}: ${v}`);
-        } else if (f.type === 'cta') {
-          if (hasContent(v)) {
-            const lines = [`${f.label}:`];
-            for (const [k, label] of CTA_ITEMS) {
-              const item = v[k] || {};
-              if (item.on || (item.text && item.text.trim())) {
-                lines.push(`${item.on ? '☑' : '☐'} ${label}${item.text ? ': ' + item.text.trim() : ''}`);
-              }
-            }
-            body.push(lines.join('\n'));
-          }
-        }
-      }
+      const body = fieldsText(page.fields, d);
       if (body.length) out.push('', page.title.toUpperCase(), ...body.flatMap((b) => [b, '']));
     }
     return out.join('\n').replace(/\n{3,}/g, '\n\n').trim() + '\n';
@@ -220,6 +248,7 @@
 
   let current = null; // { note, timer, page }
   const pageByNote = {};
+  const blockByNote = {};
 
   function route() {
     const m = location.hash.match(/^#note-(.+)$/);
@@ -555,6 +584,29 @@
       );
     },
 
+    blocks(f, d) {
+      const list = d[f.key] || (d[f.key] = []);
+      while (list.length < f.labels.length) list.push({});
+      const idx = Math.min(current.block || 0, f.labels.length - 1);
+      const tabs = h('div', { class: 'segmented block-tabs', role: 'tablist', 'aria-label': 'Second hour blocks' },
+        f.labels.map((label, i) => h('button', {
+          type: 'button', role: 'tab', 'aria-selected': String(i === idx),
+          onclick: () => {
+            if (i === idx) return;
+            current.block = blockByNote[current.note.id] = i;
+            renderPage();
+          },
+        }, label, hasContent(list[i]) && h('span', { class: 'filled-dot', title: 'Has notes', 'aria-label': '(has notes)' })))
+      );
+      return h('section', { class: 'blocks' },
+        tabs,
+        h('div', { class: 'block-body' },
+          h('h3', { class: 'display block-title' }, f.labels[idx]),
+          f.fields.map((c) => renderField(c, list[idx]))
+        )
+      );
+    },
+
     hearHim(f, d) {
       const dots = h('div', { class: 'dots', role: 'group', 'aria-label': f.label });
       const count = h('span', { class: 'count', 'aria-live': 'polite' });
@@ -652,7 +704,7 @@
     const note = Store.get(id);
     if (!note || !SCHEMAS[note.type]) { location.replace('#home'); return; }
     const schema = SCHEMAS[note.type];
-    current = { note, timer: null, page: Math.min(pageByNote[id] || 0, schema.pages.length - 1) };
+    current = { note, timer: null, page: Math.min(pageByNote[id] || 0, schema.pages.length - 1), block: blockByNote[id] || 0 };
     document.title = `${schema.label} · Church Notes`;
     const d = note.data;
 

@@ -490,6 +490,22 @@ button, input, textarea { font: inherit; color: inherit; }
 }
 .add-btn:active { background: var(--band); }
 
+/* Second hour blocks */
+.blocks { margin-top: 28px; }
+.block-tabs button { display: inline-flex; align-items: center; justify-content: center; gap: 6px; }
+.filled-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--accent);
+}
+.block-body {
+  margin-top: 12px;
+  padding-left: 14px;
+  border-left: 2px solid var(--band);
+}
+.block-title { font-size: 24px; margin: 6px 0 0; }
+
 /* Hear Him */
 .hear-him .count {
   font-family: var(--serif);
