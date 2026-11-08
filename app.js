@@ -79,6 +79,21 @@
     toastTimer = setTimeout(() => el.classList.remove('show'), 2600);
   }
 
+  // Two-tap confirm (in-page, since some embedded views block confirm()).
+  function armed(btn, prompt, action) {
+    if (btn.dataset.armed) { action(); return; }
+    const orig = btn.textContent;
+    btn.dataset.armed = '1';
+    btn.textContent = prompt;
+    btn.classList.add('armed');
+    setTimeout(() => {
+      if (!btn.isConnected) return;
+      delete btn.dataset.armed;
+      btn.textContent = orig;
+      btn.classList.remove('armed');
+    }, 3000);
+  }
+
   /* ---------- storage ---------- */
 
   const Store = {
@@ -207,7 +222,7 @@
   const pageByNote = {};
 
   function route() {
-    const m = location.hash.match(/^#\/note\/(.+)$/);
+    const m = location.hash.match(/^#note-(.+)$/);
     if (m) renderEditor(decodeURIComponent(m[1]));
     else renderHome();
   }
@@ -229,7 +244,7 @@
       data: { date: isoDate(now), time: hhmm(now), location: '' },
     };
     Store.put(note);
-    location.hash = `#/note/${encodeURIComponent(note.id)}`;
+    location.hash = `#note-${encodeURIComponent(note.id)}`;
   }
 
   /* ---------- home ---------- */
@@ -266,7 +281,7 @@
         ...notes.map((n) => {
           const desc = describe(n);
           const snip = snippet(n);
-          return h('a', { class: `note-card type-${n.type}`, href: `#/note/${encodeURIComponent(n.id)}` },
+          return h('a', { class: `note-card type-${n.type}`, href: `#note-${encodeURIComponent(n.id)}` },
             h('span', { class: 'kicker' }, desc.kicker),
             h('span', { class: 'card-title' }, desc.title),
             h('span', { class: 'card-date' }, [fmtDate(n.data.date), n.data.location].filter(Boolean).join(' · ')),
@@ -509,12 +524,15 @@
               ),
               h('button', {
                 type: 'button', class: 'icon-btn remove', 'aria-label': `Remove speaker ${i + 1}`,
-                onclick: () => {
-                  if (hasContent(s) && !confirm('Remove this speaker and their notes?')) return;
-                  list.splice(i, 1);
-                  if (!list.length) list.push({ name: '', topic: '', notes: '' });
-                  draw();
-                  changed();
+                onclick: (e) => {
+                  const remove = () => {
+                    list.splice(i, 1);
+                    if (!list.length) list.push({ name: '', topic: '', notes: '' });
+                    draw();
+                    changed();
+                  };
+                  if (hasContent(s)) armed(e.currentTarget, 'Remove?', remove);
+                  else remove();
                 },
               }, '×')
             ),
@@ -604,26 +622,35 @@
     flush();
     const text = noteToText(current.note);
     const title = describe(current.note).kicker;
-    if (navigator.share) {
+    const embedded = window.self !== window.top;
+    if (navigator.share && !embedded) {
       navigator.share({ title, text }).catch(() => {});
     } else if (navigator.clipboard) {
-      navigator.clipboard.writeText(text).then(() => toast('Copied to clipboard.'), () => toast('Could not copy.'));
+      navigator.clipboard.writeText(text).then(
+        () => toast('Copied to clipboard. Paste it anywhere.'),
+        () => toast('Could not copy on this device.')
+      );
+    } else {
+      toast('Could not copy on this device.');
     }
   }
 
-  function deleteNote() {
-    if (!confirm('Delete this note? This cannot be undone.')) return;
+  function deleteNote(e) {
+    armed(e.currentTarget, 'Tap again to delete', reallyDelete);
+  }
+
+  function reallyDelete() {
     const id = current.note.id;
     clearTimeout(current.timer);
     current = null;
     Store.remove(id);
-    location.hash = '#/';
+    location.hash = '#home';
   }
 
   function renderEditor(id) {
     if (current && current.note.id !== id) leaveEditor();
     const note = Store.get(id);
-    if (!note || !SCHEMAS[note.type]) { location.replace('#/'); return; }
+    if (!note || !SCHEMAS[note.type]) { location.replace('#home'); return; }
     const schema = SCHEMAS[note.type];
     current = { note, timer: null, page: Math.min(pageByNote[id] || 0, schema.pages.length - 1) };
     document.title = `${schema.label} · Church Notes`;
@@ -658,7 +685,7 @@
 
     app.replaceChildren(...[
       h('header', { class: 'editor-bar' },
-        h('a', { href: '#/', class: 'back' }, '‹ Notes'),
+        h('a', { href: '#home', class: 'back' }, '‹ Notes'),
         h('span', { id: 'save-status', class: 'status' }, ''),
         h('button', { type: 'button', class: 'bar-btn', onclick: shareNote }, 'Share')
       ),

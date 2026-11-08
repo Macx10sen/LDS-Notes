@@ -12,11 +12,11 @@
   --line: 32px; /* must match LINE in app.js */
   --serif: "Iowan Old Style", "Palatino Linotype", Palatino, "Book Antiqua", Georgia, serif;
   --sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-  color-scheme: light dark;
+  color-scheme: light;
 }
 
 @media (prefers-color-scheme: dark) {
-  :root {
+  :root:not([data-theme="light"]) {
     --paper: #1b1a18;
     --card: #24221f;
     --ink: #ece6da;
@@ -27,7 +27,22 @@
     --accent: #a9b8a6;
     --danger: #e08a7e;
     --focus: #cdb880;
+    color-scheme: dark;
   }
+}
+
+:root[data-theme="dark"] {
+  --paper: #1b1a18;
+  --card: #24221f;
+  --ink: #ece6da;
+  --muted: #a39b8e;
+  --rule: #3d3a35;
+  --rule-strong: #b8b0a2;
+  --band: #2c2a26;
+  --accent: #a9b8a6;
+  --danger: #e08a7e;
+  --focus: #cdb880;
+  color-scheme: dark;
 }
 
 * { box-sizing: border-box; }
@@ -45,7 +60,10 @@ body {
 main {
   max-width: 760px;
   margin: 0 auto;
-  padding: 0 max(16px, env(safe-area-inset-right)) calc(32px + env(safe-area-inset-bottom)) max(16px, env(safe-area-inset-left));
+  padding-top: 0;
+  padding-bottom: calc(32px + env(safe-area-inset-bottom, 0px));
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
 }
 
 button, input, textarea { font: inherit; color: inherit; }
@@ -452,6 +470,14 @@ button, input, textarea { font: inherit; color: inherit; }
   cursor: pointer;
 }
 .icon-btn:active { background: var(--band); }
+.icon-btn.armed {
+  width: auto;
+  padding: 0 10px;
+  font-size: 14px;
+  color: var(--danger);
+  border-radius: 999px;
+  background: var(--band);
+}
 .add-btn {
   margin-top: 8px;
   border: 1px dashed var(--rule-strong);
@@ -500,6 +526,7 @@ button, input, textarea { font: inherit; color: inherit; }
 .cta .line-input { border-bottom-color: var(--rule-strong); }
 
 .editor-foot { margin-top: 40px; text-align: center; }
+.danger-btn.armed { background: var(--danger); color: var(--paper); border-color: var(--danger); }
 .danger-btn {
   border: 1px solid var(--rule);
   background: transparent;
