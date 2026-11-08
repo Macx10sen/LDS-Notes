@@ -364,6 +364,7 @@
         ),
         list,
         h('footer', { class: 'home-foot' },
+          appearancePicker(),
           h('button', { type: 'button', class: 'link-btn', onclick: exportBackup }, 'Back up notes'),
           h('button', { type: 'button', class: 'link-btn', onclick: () => fileInput.click() }, 'Restore backup'),
           fileInput,
@@ -373,6 +374,70 @@
     );
     draw();
     window.scrollTo(0, 0);
+  }
+
+  /* ---------- appearance ---------- */
+
+  const THEME_KEY = 'churchNotes.theme';
+  const THEMES = [
+    ['system', 'System'],
+    ['light', 'Light'],
+    ['dark', 'Dark'],
+    ['paper', 'Paper'],
+  ];
+
+  function getTheme() {
+    try {
+      const t = localStorage.getItem(THEME_KEY);
+      return THEMES.some(([k]) => k === t) ? t : 'system';
+    } catch (e) {
+      return 'system';
+    }
+  }
+
+  function applyTheme(t) {
+    const root = document.documentElement;
+    if (t === 'system') root.removeAttribute('data-appearance');
+    else root.setAttribute('data-appearance', t);
+    // Match the phone's status bar to the page.
+    const bg = getComputedStyle(root).getPropertyValue('--paper').trim();
+    document.querySelectorAll('meta[name="theme-color"]').forEach((m) => {
+      if (!m.dataset.media) m.dataset.media = m.getAttribute('media') || '';
+      if (t === 'system') {
+        if (m.dataset.media) m.setAttribute('media', m.dataset.media);
+        m.setAttribute('content', m.dataset.original || m.getAttribute('content'));
+      } else {
+        if (!m.dataset.original) m.dataset.original = m.getAttribute('content');
+        m.removeAttribute('media');
+        m.setAttribute('content', bg);
+      }
+    });
+  }
+
+  function setTheme(t) {
+    try { localStorage.setItem(THEME_KEY, t); } catch (e) { /* still applies for this visit */ }
+    applyTheme(t);
+  }
+
+  function appearancePicker() {
+    const current = getTheme();
+    const bar = h('div', { class: 'segmented appearance', role: 'radiogroup', 'aria-label': 'Appearance' },
+      THEMES.map(([k, label]) => h('button', {
+        type: 'button',
+        role: 'radio',
+        'aria-checked': String(k === current),
+        'aria-selected': String(k === current),
+        onclick: (e) => {
+          setTheme(k);
+          bar.querySelectorAll('button').forEach((b) => {
+            const on = String(b === e.currentTarget);
+            b.setAttribute('aria-checked', on);
+            b.setAttribute('aria-selected', on);
+          });
+        },
+      }, h('span', { class: `swatch swatch-${k}`, 'aria-hidden': 'true' }), label))
+    );
+    return h('div', { class: 'setting' }, h('h3', { class: 'label' }, 'Appearance'), bar);
   }
 
   /* ---------- backup ---------- */
@@ -756,6 +821,7 @@
 
   /* ---------- boot ---------- */
 
+  applyTheme(getTheme());
   window.addEventListener('hashchange', route);
   document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden') flush(); });
   window.addEventListener('pagehide', flush);

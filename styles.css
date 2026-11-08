@@ -15,8 +15,10 @@
   color-scheme: light;
 }
 
+/* Appearance: "System" sets no data-appearance and follows the device
+   (or the host's data-theme); the other choices force a palette. */
 @media (prefers-color-scheme: dark) {
-  :root:not([data-theme="light"]) {
+  :root:not([data-theme="light"]):not([data-appearance]) {
     --paper: #1b1a18;
     --card: #24221f;
     --ink: #ece6da;
@@ -31,7 +33,8 @@
   }
 }
 
-:root[data-theme="dark"] {
+:root[data-theme="dark"]:not([data-appearance]),
+:root[data-appearance="dark"] {
   --paper: #1b1a18;
   --card: #24221f;
   --ink: #ece6da;
@@ -43,6 +46,34 @@
   --danger: #e08a7e;
   --focus: #cdb880;
   color-scheme: dark;
+}
+
+:root[data-appearance="light"] {
+  --paper: #f7f2e8;
+  --card: #fbf8f1;
+  --ink: #2b2925;
+  --muted: #736d63;
+  --rule: #d6cfc1;
+  --rule-strong: #4a4640;
+  --band: #e8e3d9;
+  --accent: #5b6b5a;
+  --danger: #9b3b30;
+  --focus: #8a7a52;
+  color-scheme: light;
+}
+
+:root[data-appearance="paper"] {
+  --paper: #e8dbc2;
+  --card: #f0e5cf;
+  --ink: #4a3221;
+  --muted: #7a604b;
+  --rule: #c7b18f;
+  --rule-strong: #6b4b32;
+  --band: #dac7a5;
+  --accent: #7b5a36;
+  --danger: #92311f;
+  --focus: #8a6431;
+  color-scheme: light;
 }
 
 * { box-sizing: border-box; }
@@ -246,6 +277,19 @@ button, input, textarea { font: inherit; color: inherit; }
   cursor: pointer;
   font-size: 15px;
 }
+.setting { width: 100%; display: flex; flex-direction: column; gap: 8px; margin-bottom: 12px; }
+.appearance button { display: inline-flex; align-items: center; justify-content: center; gap: 6px; min-width: 0; }
+.swatch {
+  flex: none;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  border: 1px solid var(--rule-strong);
+}
+.swatch-system { background: linear-gradient(135deg, #f7f2e8 50%, #1b1a18 50%); }
+.swatch-light { background: #f7f2e8; }
+.swatch-dark { background: #1b1a18; }
+.swatch-paper { background: #e8dbc2; border-color: #6b4b32; }
 .fine { width: 100%; margin: 4px 0 0; font-size: 13px; color: var(--muted); }
 
 /* ---------- editor ---------- */

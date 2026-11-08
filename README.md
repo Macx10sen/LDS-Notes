@@ -13,7 +13,8 @@ Every note also has a date, time and location. When **General Conference** is ch
 ## Features
 
 - Saves as you type, and works offline once it has been opened (no signal needed in the chapel).
-- Lined, auto-growing writing areas that look like the notebook. Supports dark mode.
+- Lined, auto-growing writing areas that look like the notebook.
+- **Appearance** setting (bottom of the home screen): System, Light, Dark, or Paper (tan page, brown ink).
 - Tap circles for **Hear Him**.
 - Search all notes and filter by Sundays or Meetings.
 - **Share** sends a note as plain text to Messages, email, Notes and similar apps.
