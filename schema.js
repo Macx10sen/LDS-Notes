@@ -11,12 +11,18 @@
  *            toggle: a checkbox in the heading, stored at data[toggle.key]
  *   hearHim  row of tap-to-fill circles  data[key] = number
  *   cta      Read / Pray / Share about   data[key] = { read:{on,text}, pray:{…}, share:{…} }
+ *   choice   pick one option (segmented)  data[key] = option key
  *   blocks   the same fields repeated once per label, one shown at a time
  *            data[key] = [ {…fields for labels[0]}, {…fields for labels[1]} ]
+ *            labels may be a function (d, long) => [labels], for labels that
+ *            depend on the note (like the days of the study week)
+ *
+ * Any field may have show: (d) => boolean to hide it in some cases.
  *   row      children side by side on wide screens, stacked on phones
  *   col      children stacked (used inside a row)
  *
- * Every note also has data.date, data.time and data.location, shown above the pages.
+ * Every note also has data.date (and, unless the type's `when` says otherwise,
+ * data.time and data.location), shown above the pages.
  */
 (function () {
   'use strict';
@@ -29,6 +35,49 @@
     'Sunday Afternoon',
   ];
   const LOCAL_SESSIONS = ['Leadership Session', 'Adult Session', 'Sunday Session'];
+
+  const STUDY_KINDS = [
+    ['seminary', 'Seminary / Institute'],
+    ['personal', 'Personal Study'],
+  ];
+
+  // Study weeks start on Monday, like the Come, Follow Me schedule.
+  // Seminary / Institute meets Monday–Friday; personal study runs all 7 days.
+  function studyDays(d) {
+    return d.kind === 'seminary' ? 5 : 7;
+  }
+
+  function weekStart(d) {
+    if (!d.date) return null;
+    const [y, m, day] = d.date.split('-').map(Number);
+    return new Date(y, m - 1, day);
+  }
+
+  function dayLabels(d, long) {
+    const start = weekStart(d);
+    return Array.from({ length: studyDays(d) }, (_, i) => {
+      const date = start ? new Date(start.getFullYear(), start.getMonth(), start.getDate() + i) : null;
+      const weekday = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'][i];
+      if (long) {
+        return date
+          ? date.toLocaleDateString(undefined, { weekday: 'long', month: 'long', day: 'numeric' })
+          : weekday;
+      }
+      return date
+        ? `${date.toLocaleDateString(undefined, { weekday: 'short' })}\n${date.getDate()}`
+        : weekday.slice(0, 3);
+    });
+  }
+
+  // Which day tab to open first: today, if it falls in this week.
+  function todayIndex(d) {
+    const start = weekStart(d);
+    if (!start) return 0;
+    const now = new Date();
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const diff = Math.round((today - start) / 86400000);
+    return diff >= 0 && diff < studyDays(d) ? diff : 0;
+  }
 
   window.SCHEMAS = {
     sunday: {
@@ -172,6 +221,59 @@
               ],
             },
             { type: 'lines', key: 'biggestTakeaways', label: 'Biggest Takeaways', rows: 3 },
+            { type: 'cta', key: 'callToAction', label: 'Call to Action' },
+          ],
+        },
+      ],
+    },
+
+    study: {
+      label: 'Daily Study',
+      blurb: 'Come, Follow Me · Seminary, Institute & personal study',
+      kinds: STUDY_KINDS,
+      when: { date: 'Week of', time: false, location: false },
+      defaultBlock: todayIndex,
+      pages: [
+        {
+          title: 'Come, Follow Me',
+          short: 'Week',
+          fields: [
+            { type: 'choice', key: 'kind', label: 'Study', options: STUDY_KINDS },
+            {
+              type: 'line',
+              key: 'cfmReading',
+              label: 'Come, Follow Me',
+              sublabel: "This week's reading",
+              placeholder: 'e.g., Exodus 14–17',
+            },
+            { type: 'line', key: 'weekTitle', label: "This Week's Lesson", placeholder: 'Lesson title' },
+            { type: 'line', key: 'teacher', label: 'Teacher', show: (d) => d.kind === 'seminary' },
+            {
+              type: 'blocks',
+              key: 'days',
+              labels: dayLabels,
+              ariaLabel: 'Days of the week',
+              tabClass: 'day-tabs',
+              fields: [
+                {
+                  type: 'line',
+                  key: 'scriptures',
+                  label: "Today's Scriptures",
+                  placeholder: 'e.g., Exodus 14:13–31',
+                },
+                { type: 'lines', key: 'notes', label: 'Notes / Impressions', rows: 8 },
+                {
+                  type: 'row',
+                  fields: [
+                    { type: 'lines', key: 'somethingILoved', label: 'Something I Loved', rows: 3 },
+                    { type: 'lines', key: 'forLater', label: 'For Later', rows: 3 },
+                  ],
+                },
+                { type: 'lines', key: 'promptings', label: 'Promptings / Takeaways', rows: 3 },
+                { type: 'hearHim', key: 'hearHim', label: 'Hear Him' },
+              ],
+            },
+            { type: 'lines', key: 'biggestTakeaways', label: 'Biggest Takeaways', sublabel: 'This week', rows: 3 },
             { type: 'cta', key: 'callToAction', label: 'Call to Action' },
           ],
         },

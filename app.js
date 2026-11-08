@@ -60,7 +60,7 @@
   }
 
   const isEmpty = (note) =>
-    !Object.entries(note.data).some(([k, v]) => k !== 'date' && k !== 'time' && hasContent(v));
+    !Object.entries(note.data).some(([k, v]) => !['date', 'time', 'kind'].includes(k) && hasContent(v));
 
   function flatFields(fields) {
     return fields.flatMap((f) => (f.type === 'row' || f.type === 'col' ? flatFields(f.fields) : [f]));
@@ -158,8 +158,24 @@
     return [...(v.selected || []), ...(v.other && v.other.trim() ? [v.other.trim()] : [])];
   }
 
+  function kindLabel(note) {
+    const kinds = SCHEMAS[note.type].kinds || [];
+    const match = kinds.find(([k]) => k === note.data.kind);
+    return match ? match[1] : '';
+  }
+
+  function blockLabels(f, d, long) {
+    return typeof f.labels === 'function' ? f.labels(d, long) : f.labels;
+  }
+
   function describe(note) {
     const d = note.data;
+    if (note.type === 'study') {
+      return {
+        kicker: kindLabel(note) || 'Daily Study',
+        title: (d.cfmReading || '').trim() || (d.weekTitle || '').trim() || 'Come, Follow Me',
+      };
+    }
     if (note.type === 'meeting') {
       const conf = checksText(d.conference);
       const sess = checksText(d.session);
@@ -179,6 +195,8 @@
     const d = note.data;
     const names = (d.speakers || []).map((s) => s.name && s.name.trim()).filter(Boolean);
     if (names.length) return names.join(' · ');
+    const read = (d.days || []).map((x) => x && x.scriptures && x.scriptures.trim()).filter(Boolean);
+    if (read.length) return read.join(' · ');
     for (const f of SCHEMAS[note.type].pages.flatMap((p) => flatFields(p.fields))) {
       if (f.type === 'lines' && d[f.key] && d[f.key].trim()) return d[f.key].trim().slice(0, 140);
     }
@@ -188,9 +206,10 @@
   function fieldsText(fields, d) {
     const body = [];
     for (const f of flatFields(fields)) {
+      if (f.show && !f.show(d)) continue;
       const v = d[f.key];
       if (f.type === 'blocks') {
-        f.labels.forEach((label, i) => {
+        blockLabels(f, d, true).forEach((label, i) => {
           const sub = fieldsText(f.fields, (v && v[i]) || {});
           if (sub.length) body.push(`— ${label} —`, ...sub);
         });
@@ -263,14 +282,20 @@
     current = null;
   }
 
-  function newNote(type) {
+  function newNote(type, extra) {
     const now = new Date();
+    let data = { date: isoDate(now), time: hhmm(now), location: '' };
+    if (type === 'study') {
+      // A study note is one Come, Follow Me week, starting Monday.
+      const monday = new Date(now.getFullYear(), now.getMonth(), now.getDate() - ((now.getDay() + 6) % 7));
+      data = { date: isoDate(monday) };
+    }
     const note = {
       id: uid(),
       type,
       created: Date.now(),
       updated: Date.now(),
-      data: { date: isoDate(now), time: hhmm(now), location: '' },
+      data: Object.assign(data, extra || {}),
     };
     Store.put(note);
     location.hash = `#note-${encodeURIComponent(note.id)}`;
@@ -313,14 +338,17 @@
           return h('a', { class: `note-card type-${n.type}`, href: `#note-${encodeURIComponent(n.id)}` },
             h('span', { class: 'kicker' }, desc.kicker),
             h('span', { class: 'card-title' }, desc.title),
-            h('span', { class: 'card-date' }, [fmtDate(n.data.date), n.data.location].filter(Boolean).join(' · ')),
+            h('span', { class: 'card-date' }, [
+              (n.type === 'study' ? 'Week of ' : '') + fmtDate(n.data.date),
+              n.data.location,
+            ].filter(Boolean).join(' · ')),
             snip && h('span', { class: 'card-snippet' }, snip)
           );
         })
       );
     }
 
-    const filters = [['all', 'All'], ['sunday', 'Sundays'], ['meeting', 'Meetings']];
+    const filters = [['all', 'All'], ['sunday', 'Sundays'], ['meeting', 'Meetings'], ['study', 'Study']];
     const filterBar = h('div', { class: 'segmented', role: 'tablist' },
       filters.map(([k, label]) => h('button', {
         type: 'button',
@@ -344,10 +372,31 @@
         ),
         h('div', { class: 'new-grid' },
           Object.entries(SCHEMAS).map(([type, s]) =>
-            h('button', { type: 'button', class: `new-btn type-${type}`, onclick: () => newNote(type) },
+            h('button', {
+              type: 'button',
+              class: `new-btn type-${type}`,
+              'aria-expanded': s.kinds ? 'false' : null,
+              onclick: (e) => {
+                if (!s.kinds) { newNote(type); return; }
+                // Types with kinds (Daily Study) ask which kind first.
+                const picker = document.getElementById(`picker-${type}`);
+                picker.hidden = !picker.hidden;
+                e.currentTarget.setAttribute('aria-expanded', String(!picker.hidden));
+              },
+            },
               h('span', { class: 'plus', 'aria-hidden': 'true' }, '+'),
               h('span', { class: 'new-label' }, s.label),
               h('span', { class: 'new-blurb' }, s.blurb)
+            )
+          ),
+          Object.entries(SCHEMAS).filter(([, s]) => s.kinds).map(([type, s]) =>
+            h('div', { class: 'kind-picker', id: `picker-${type}`, hidden: true },
+              h('p', { class: 'label' }, 'Start a week of'),
+              h('div', { class: 'kind-buttons' },
+                s.kinds.map(([k, label]) => h('button', {
+                  type: 'button', class: 'kind-btn', onclick: () => newNote(type, { kind: k }),
+                }, label))
+              )
             )
           )
         ),
@@ -551,8 +600,30 @@
         fieldLabel(f),
         h('input', {
           type: 'text', class: 'line-input', 'aria-label': f.label, value: d[f.key] || '',
+          placeholder: f.placeholder || null,
           oninput: (e) => { d[f.key] = e.target.value; changed(); },
         })
+      );
+    },
+
+    choice(f, d) {
+      if (!f.options.some(([k]) => k === d[f.key])) d[f.key] = f.options[0][0];
+      return h('section', { class: 'field' },
+        fieldLabel(f),
+        h('div', { class: 'segmented choice', role: 'radiogroup', 'aria-label': f.label },
+          f.options.map(([k, label]) => h('button', {
+            type: 'button',
+            role: 'radio',
+            'aria-checked': String(d[f.key] === k),
+            'aria-selected': String(d[f.key] === k),
+            onclick: () => {
+              if (d[f.key] === k) return;
+              d[f.key] = k;
+              changed();
+              renderPage();
+            },
+          }, label))
+        )
       );
     },
 
@@ -650,23 +721,32 @@
     },
 
     blocks(f, d) {
+      const labels = blockLabels(f, d, false);
+      const titles = blockLabels(f, d, true);
       const list = d[f.key] || (d[f.key] = []);
-      while (list.length < f.labels.length) list.push({});
-      const idx = Math.min(current.block || 0, f.labels.length - 1);
-      const tabs = h('div', { class: 'segmented block-tabs', role: 'tablist', 'aria-label': 'Second hour blocks' },
-        f.labels.map((label, i) => h('button', {
-          type: 'button', role: 'tab', 'aria-selected': String(i === idx),
+      while (list.length < labels.length) list.push({});
+      const idx = Math.min(current.block || 0, labels.length - 1);
+      const tabs = h('div', {
+        class: `segmented block-tabs ${f.tabClass || ''}`, role: 'tablist', 'aria-label': f.ariaLabel || 'Blocks',
+      },
+        labels.map((label, i) => h('button', {
+          type: 'button', role: 'tab', 'aria-selected': String(i === idx), 'aria-label': titles[i],
           onclick: () => {
             if (i === idx) return;
             current.block = blockByNote[current.note.id] = i;
             renderPage();
           },
-        }, label, hasContent(list[i]) && h('span', { class: 'filled-dot', title: 'Has notes', 'aria-label': '(has notes)' })))
+        },
+          label.includes('\n')
+            ? label.split('\n').map((part, j) => h('span', { class: j ? 'tab-bottom' : 'tab-top' }, part))
+            : label,
+          hasContent(list[i]) && h('span', { class: 'filled-dot', title: 'Has notes' })
+        ))
       );
       return h('section', { class: 'blocks' },
         tabs,
         h('div', { class: 'block-body' },
-          h('h3', { class: 'display block-title' }, f.labels[idx]),
+          h('h3', { class: 'display block-title' }, titles[idx]),
           f.fields.map((c) => renderField(c, list[idx]))
         )
       );
@@ -717,6 +797,7 @@
   };
 
   function renderField(f, d) {
+    if (f.show && !f.show(d)) return null;
     return renderers[f.type](f, d);
   }
 
@@ -729,7 +810,7 @@
     const y = window.scrollY;
     host.replaceChildren(
       h('h2', { class: 'display page-title' }, page.title),
-      ...page.fields.map((f) => renderField(f, note.data))
+      ...page.fields.map((f) => renderField(f, note.data)).filter(Boolean)
     );
     host.querySelectorAll('textarea').forEach(autoGrow);
     window.scrollTo(0, y);
@@ -769,16 +850,25 @@
     const note = Store.get(id);
     if (!note || !SCHEMAS[note.type]) { location.replace('#home'); return; }
     const schema = SCHEMAS[note.type];
-    current = { note, timer: null, page: Math.min(pageByNote[id] || 0, schema.pages.length - 1), block: blockByNote[id] || 0 };
+    if (!(id in blockByNote)) blockByNote[id] = schema.defaultBlock ? schema.defaultBlock(note.data) : 0;
+    current = { note, timer: null, page: Math.min(pageByNote[id] || 0, schema.pages.length - 1), block: blockByNote[id] };
     document.title = `${schema.label} · Church Notes`;
     const d = note.data;
 
+    const W = schema.when || { date: 'Date', time: true, location: true };
     const when = h('div', { class: 'when band' },
-      h('label', { class: 'when-item' }, h('span', { class: 'label' }, 'Date'),
-        h('input', { type: 'date', value: d.date || '', oninput: (e) => { d.date = e.target.value; changed(); } })),
-      h('label', { class: 'when-item' }, h('span', { class: 'label' }, 'Time'),
+      h('label', { class: 'when-item' }, h('span', { class: 'label' }, W.date),
+        h('input', {
+          type: 'date', value: d.date || '',
+          oninput: (e) => {
+            d.date = e.target.value;
+            changed();
+            if (!W.time) renderPage(); // day labels follow the week's date
+          },
+        })),
+      W.time && h('label', { class: 'when-item' }, h('span', { class: 'label' }, 'Time'),
         h('input', { type: 'time', value: d.time || '', oninput: (e) => { d.time = e.target.value; changed(); } })),
-      h('label', { class: 'when-item where' }, h('span', { class: 'label' }, 'Location'),
+      W.location && h('label', { class: 'when-item where' }, h('span', { class: 'label' }, 'Location'),
         h('input', {
           type: 'text', placeholder: note.type === 'meeting' ? 'Stake center, broadcast…' : 'Ward / building', value: d.location || '',
           oninput: (e) => { d.location = e.target.value; changed(); },
