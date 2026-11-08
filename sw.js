@@ -1,6 +1,6 @@
 // Offline support: serve the app from cache, refresh the cache in the background.
 // Bump VERSION whenever app files change so phones pick up the update.
-const VERSION = 'church-notes-v4';
+const VERSION = 'church-notes-v5';
 const ASSETS = [
   './',
   './index.html',
