@@ -362,7 +362,7 @@
       }, label))
     );
 
-    const fileInput = h('input', { type: 'file', accept: 'application/json,.json', hidden: true, onchange: importBackup });
+    const fileInput = h('input', { type: 'file', accept: 'application/json,.json,text/plain,.txt', hidden: true, onchange: importBackup });
 
     app.replaceChildren(
       h('div', { class: 'home' },
@@ -492,21 +492,49 @@
   /* ---------- backup ---------- */
 
   function exportBackup() {
-    const json = JSON.stringify({ app: 'latter-day-notebook', version: 1, exported: new Date().toISOString(), notes: Store.all() }, null, 2);
-    const name = `latter-day-notebook-backup-${isoDate(new Date())}.json`;
-    const blob = new Blob([json], { type: 'application/json' });
-    let file;
-    try { file = new File([blob], name, { type: 'application/json' }); } catch (e) { /* old browsers */ }
-    if (file && navigator.canShare && navigator.canShare({ files: [file] })) {
-      navigator.share({ files: [file], title: name }).catch(() => {});
+    const notes = Store.all();
+    if (!notes.length) { toast('There are no notes to back up yet.'); return; }
+    if (window.self !== window.top) {
+      toast('Backups work in the installed app, not in this preview.');
       return;
     }
-    const url = URL.createObjectURL(blob);
+    const json = JSON.stringify({ app: 'latter-day-notebook', version: 1, exported: new Date().toISOString(), notes }, null, 2);
+    const base = `latter-day-notebook-backup-${isoDate(new Date())}`;
+
+    // Prefer the share sheet (Save to Files, Drive, email…). Android only shares
+    // some file types, so fall back from .json to plain text, which it accepts.
+    if (navigator.share && navigator.canShare) {
+      const candidates = [];
+      try {
+        candidates.push(
+          new File([json], `${base}.json`, { type: 'application/json' }),
+          new File([json], `${base}.txt`, { type: 'text/plain' })
+        );
+      } catch (e) { /* File not supported; use the download below */ }
+      const file = candidates.find((f) => {
+        try { return navigator.canShare({ files: [f] }); } catch (e) { return false; }
+      });
+      if (file) {
+        navigator.share({ files: [file], title: 'Latter Day Notebook backup' })
+          .then(() => toast('Backup shared.'))
+          .catch((err) => {
+            if (err && err.name === 'AbortError') return; // closed the share sheet
+            downloadBackup(json, `${base}.json`);
+          });
+        return;
+      }
+    }
+    downloadBackup(json, `${base}.json`);
+  }
+
+  function downloadBackup(json, name) {
+    const url = URL.createObjectURL(new Blob([json], { type: 'application/json' }));
     const a = h('a', { href: url, download: name });
     document.body.append(a);
     a.click();
     a.remove();
-    setTimeout(() => URL.revokeObjectURL(url), 1000);
+    setTimeout(() => URL.revokeObjectURL(url), 10000);
+    toast(`Saved ${name} to your Downloads.`);
   }
 
   function importBackup(e) {
