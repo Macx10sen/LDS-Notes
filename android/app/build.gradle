@@ -1,0 +1,51 @@
+plugins {
+    id 'com.android.application'
+}
+
+android {
+    namespace 'com.macx10sen.ldnotebook'
+    compileSdk 34
+
+    defaultConfig {
+        applicationId 'com.macx10sen.ldnotebook'
+        minSdk 24
+        targetSdk 34
+        // CI passes the build number so each release can install over the last one.
+        versionCode((project.findProperty('versionCode') ?: '1') as Integer)
+        versionName "1.0.${versionCode}"
+    }
+
+    // The release key comes from the environment (GitHub secrets in CI), never
+    // from the repo. Without it, the build is signed with the debug key, which
+    // is fine for checking that it compiles but can't update an installed app.
+    def keystorePath = System.getenv('ANDROID_KEYSTORE_FILE')
+    def keystorePassword = System.getenv('ANDROID_KEYSTORE_PASSWORD')
+    def hasReleaseKey = keystorePath && keystorePassword && file(keystorePath).exists()
+
+    signingConfigs {
+        if (hasReleaseKey) {
+            release {
+                storeFile file(keystorePath)
+                storePassword keystorePassword
+                keyAlias 'ldnotebook'
+                keyPassword keystorePassword
+            }
+        }
+    }
+
+    buildTypes {
+        release {
+            minifyEnabled false
+            signingConfig hasReleaseKey ? signingConfigs.release : signingConfigs.debug
+        }
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+}
+
+dependencies {
+    implementation 'androidx.core:core:1.13.1'
+}
