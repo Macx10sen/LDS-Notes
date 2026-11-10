@@ -18,6 +18,7 @@
  *            depend on the note (like the days of the study week)
  *
  * Any field may have show: (d) => boolean to hide it in some cases.
+ * label and placeholder may be functions of the whole note's data, (root) => string.
  *   row      children side by side on wide screens, stacked on phones
  *   col      children stacked (used inside a row)
  *
@@ -290,8 +291,9 @@
                 {
                   type: 'line',
                   key: 'scriptures',
-                  label: "Today's Scriptures",
-                  placeholder: 'e.g., Exodus 14:13–31',
+                  // Labels can depend on the whole note (root), even inside a day.
+                  label: (root) => (isOwnStudy(root) ? "Today's Study" : "Today's Scriptures"),
+                  placeholder: (root) => (isOwnStudy(root) ? 'e.g., Mark 4, a talk, a chapter' : 'e.g., Exodus 14:13–31'),
                 },
                 { type: 'lines', key: 'notes', label: 'Notes / Impressions', rows: 8 },
                 {
