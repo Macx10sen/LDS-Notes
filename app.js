@@ -63,7 +63,7 @@
   }
 
   const isEmpty = (note) =>
-    !Object.entries(note.data).some(([k, v]) => !['date', 'time', 'kind'].includes(k) && hasContent(v));
+    !Object.entries(note.data).some(([k, v]) => !['date', 'time', 'kind', 'source'].includes(k) && hasContent(v));
 
   function flatFields(fields) {
     return fields.flatMap((f) => (f.type === 'row' || f.type === 'col' ? flatFields(f.fields) : [f]));
@@ -167,6 +167,10 @@
     return match ? match[1] : '';
   }
 
+  function pageTitle(page, d) {
+    return typeof page.title === 'function' ? page.title(d) : page.title;
+  }
+
   function blockLabels(f, d, long) {
     return typeof f.labels === 'function' ? f.labels(d, long) : f.labels;
   }
@@ -174,6 +178,13 @@
   function describe(note) {
     const d = note.data;
     if (note.type === 'study') {
+      if (d.kind === 'personal' && d.source === 'other') {
+        const theme = (d.studyTheme || '').trim();
+        return {
+          kicker: 'Personal Study' + (theme ? ` · ${theme}` : ''),
+          title: (d.studyName || '').trim() || theme || 'Personal Study',
+        };
+      }
       return {
         kicker: kindLabel(note) || 'Daily Study',
         title: (d.cfmReading || '').trim() || (d.weekTitle || '').trim() || 'Come, Follow Me',
@@ -261,7 +272,7 @@
 
     for (const page of SCHEMAS[note.type].pages) {
       const body = fieldsText(page.fields, d);
-      if (body.length) out.push('', page.title.toUpperCase(), ...body.flatMap((b) => [b, '']));
+      if (body.length) out.push('', pageTitle(page, d).toUpperCase(), ...body.flatMap((b) => [b, '']));
     }
     return out.join('\n').replace(/\n{3,}/g, '\n\n').trim() + '\n';
   }
@@ -647,7 +658,15 @@
         h('input', {
           type: 'text', class: 'line-input', 'aria-label': f.label, value: d[f.key] || '',
           placeholder: f.placeholder || null,
-          oninput: (e) => { d[f.key] = e.target.value; changed(); },
+          oninput: (e) => {
+            d[f.key] = e.target.value;
+            changed();
+            if (f.rerenderTitle && current) {
+              const t = document.getElementById('page-title');
+              const page = SCHEMAS[current.note.type].pages[current.page];
+              if (t) t.textContent = pageTitle(page, current.note.data);
+            }
+          },
         })
       );
     },
@@ -855,7 +874,7 @@
     const host = document.getElementById('page');
     const y = window.scrollY;
     host.replaceChildren(
-      h('h2', { class: 'display page-title' }, page.title),
+      h('h2', { class: 'display page-title', id: 'page-title' }, pageTitle(page, note.data)),
       ...page.fields.map((f) => renderField(f, note.data)).filter(Boolean)
     );
     host.querySelectorAll('textarea').forEach(autoGrow);
@@ -933,7 +952,7 @@
             renderPage();
             window.scrollTo(0, 0);
           },
-        }, p.short || p.title))
+        }, p.short || pageTitle(p, d)))
       );
     }
 
