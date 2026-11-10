@@ -41,6 +41,9 @@
     ['personal', 'Personal Study'],
   ];
 
+  // Personal Study can follow Come, Follow Me or a study of your own.
+  const isOwnStudy = (d) => d.kind === 'personal' && d.source === 'other';
+
   // Study weeks start on Monday, like the Come, Follow Me schedule.
   // Seminary / Institute meets Monday–Friday; personal study runs all 7 days.
   function studyDays(d) {
@@ -235,18 +238,47 @@
       defaultBlock: todayIndex,
       pages: [
         {
-          title: 'Come, Follow Me',
+          title: (d) => (isOwnStudy(d) ? (d.studyName || '').trim() || 'Personal Study' : 'Come, Follow Me'),
           short: 'Week',
           fields: [
             { type: 'choice', key: 'kind', label: 'Study', options: STUDY_KINDS },
+            {
+              type: 'choice',
+              key: 'source',
+              label: 'Studying',
+              options: [['cfm', 'Come, Follow Me'], ['other', 'Other']],
+              show: (d) => d.kind === 'personal',
+            },
+            {
+              type: 'line',
+              key: 'studyName',
+              label: 'Study Name',
+              placeholder: 'e.g., The Life of Christ',
+              show: isOwnStudy,
+              rerenderTitle: true,
+            },
+            {
+              type: 'line',
+              key: 'studyTheme',
+              label: 'Theme',
+              placeholder: 'e.g., Faith, prayer, the Atonement',
+              show: isOwnStudy,
+            },
             {
               type: 'line',
               key: 'cfmReading',
               label: 'Come, Follow Me',
               sublabel: "This week's reading",
               placeholder: 'e.g., Exodus 14–17',
+              show: (d) => !isOwnStudy(d),
             },
-            { type: 'line', key: 'weekTitle', label: "This Week's Lesson", placeholder: 'Lesson title' },
+            {
+              type: 'line',
+              key: 'weekTitle',
+              label: "This Week's Lesson",
+              placeholder: 'Lesson title',
+              show: (d) => !isOwnStudy(d),
+            },
             { type: 'line', key: 'teacher', label: 'Teacher', show: (d) => d.kind === 'seminary' },
             {
               type: 'blocks',
