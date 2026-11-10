@@ -217,18 +217,18 @@
     return '';
   }
 
-  function fieldsText(fields, d) {
+  function fieldsText(fields, d, root = d) {
     const body = [];
     for (const f of flatFields(fields)) {
       if (f.show && !f.show(d)) continue;
       const v = d[f.key];
       if (f.type === 'blocks') {
         blockLabels(f, d, true).forEach((label, i) => {
-          const sub = fieldsText(f.fields, (v && v[i]) || {});
+          const sub = fieldsText(f.fields, (v && v[i]) || {}, root);
           if (sub.length) body.push(`— ${label} —`, ...sub);
         });
       } else if (f.type === 'line' || f.type === 'lines') {
-        if (hasContent(v)) body.push(`${f.label}${f.sublabel ? ' (' + f.sublabel + ')' : ''}:\n${v.trim()}`);
+        if (hasContent(v)) body.push(`${resolve(f.label, root)}${f.sublabel ? ' (' + f.sublabel + ')' : ''}:\n${v.trim()}`);
       } else if (f.type === 'checks') {
         const parts = checksText(v);
         const detail = f.detail && d[f.detail.key] && d[f.detail.key].trim();
@@ -618,9 +618,15 @@
     ta.style.height = Math.max(min, Math.ceil(ta.scrollHeight / LINE) * LINE) + 'px';
   }
 
+  // A field's label or placeholder may depend on the whole note's data.
+  function resolve(v, root) {
+    return typeof v === 'function' ? v(root || {}) : v;
+  }
+  const noteRoot = () => (current ? current.note.data : {});
+
   function fieldLabel(f, extra) {
     return h('div', { class: 'field-head' },
-      h('h3', { class: 'label' }, f.label, f.sublabel && h('span', { class: 'sublabel' }, f.sublabel)),
+      h('h3', { class: 'label' }, resolve(f.label, noteRoot()), f.sublabel && h('span', { class: 'sublabel' }, f.sublabel)),
       extra
     );
   }
@@ -656,8 +662,8 @@
       return h('section', { class: 'field' },
         fieldLabel(f),
         h('input', {
-          type: 'text', class: 'line-input', 'aria-label': f.label, value: d[f.key] || '',
-          placeholder: f.placeholder || null,
+          type: 'text', class: 'line-input', 'aria-label': resolve(f.label, noteRoot()), value: d[f.key] || '',
+          placeholder: resolve(f.placeholder, noteRoot()) || null,
           oninput: (e) => {
             d[f.key] = e.target.value;
             changed();
