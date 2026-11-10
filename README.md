@@ -25,6 +25,14 @@ Sunday and Meeting notes also have a date, time and location. A Daily Study note
 
 Notes are stored **only on the phone** (in the browser's local storage). Nothing is sent anywhere. Back up now and then.
 
+## Android app
+
+There's also a native Android app, **LDNotebook**, that runs on its own instead of inside Chrome. That helps if an app blocker or screen-time tool blocks Chrome. Download the latest APK on your phone and open it to install:
+
+https://github.com/Macx10sen/LDS-Notes/releases/latest/download/LDNotebook.apk
+
+Android will ask you to allow installing apps from the browser or Files app you used to open it. The app loads this site, so updates arrive without reinstalling. Its notes are separate from Chrome's, so move them with **Back up notes** and **Restore backup**. See [`android/README.md`](android/README.md) for how it's built and signed.
+
 ## Install on a phone
 
 The app is a Progressive Web App: plain HTML, CSS and JavaScript, with no build step and no app store.

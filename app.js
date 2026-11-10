@@ -5,6 +5,9 @@
   const STORE_KEY = 'churchNotes.v1';
   const LINE = 32; // px; must match --line in styles.css
   const app = document.getElementById('app');
+  // Present when running inside the Android app (see android/).
+  const native = () => window.LDNotebook;
+  const ANDROID_APK = 'https://github.com/Macx10sen/LDS-Notes/releases/latest/download/LDNotebook.apk';
 
   /* ---------- helpers ---------- */
 
@@ -417,7 +420,11 @@
           h('button', { type: 'button', class: 'link-btn', onclick: exportBackup }, 'Back up notes'),
           h('button', { type: 'button', class: 'link-btn', onclick: () => fileInput.click() }, 'Restore backup'),
           fileInput,
-          h('p', { class: 'fine' }, 'Notes are saved only on this device. Back up now and then to keep them safe.')
+          h('p', { class: 'fine' }, 'Notes are saved only on this device. Back up now and then to keep them safe.'),
+          /Android/i.test(navigator.userAgent) && !native() && window.self === window.top &&
+            h('p', { class: 'fine' },
+              h('a', { class: 'link-btn', href: ANDROID_APK }, 'Get the Android app'),
+              ' (runs on its own, without Chrome)')
         )
       )
     );
@@ -461,6 +468,11 @@
         m.setAttribute('content', bg);
       }
     });
+    // In the Android app, color the status and navigation bars too.
+    if (native() && /^#[0-9a-f]{6}$/i.test(bg)) {
+      const [r, g, b] = [1, 3, 5].map((i) => parseInt(bg.slice(i, i + 2), 16));
+      native().setSystemBars(bg, 0.299 * r + 0.587 * g + 0.114 * b > 140);
+    }
   }
 
   function setTheme(t) {
@@ -494,6 +506,12 @@
   function exportBackup() {
     const notes = Store.all();
     if (!notes.length) { toast('There are no notes to back up yet.'); return; }
+    if (native()) {
+      const json = JSON.stringify({ app: 'latter-day-notebook', version: 1, exported: new Date().toISOString(), notes }, null, 2);
+      const ok = native().shareFile(`latter-day-notebook-backup-${isoDate(new Date())}.json`, 'application/json', json);
+      if (!ok) toast('Could not create the backup file.');
+      return;
+    }
     if (window.self !== window.top) {
       toast('Backups work in the installed app, not in this preview.');
       return;
@@ -848,6 +866,7 @@
     flush();
     const text = noteToText(current.note);
     const title = describe(current.note).kicker;
+    if (native()) { native().shareText(title, text); return; }
     const embedded = window.self !== window.top;
     if (navigator.share && !embedded) {
       navigator.share({ title, text }).catch(() => {});
@@ -940,6 +959,13 @@
   /* ---------- boot ---------- */
 
   applyTheme(getTheme());
+  // Follow the phone switching between light and dark while "System" is chosen.
+  if (window.matchMedia) {
+    const mq = window.matchMedia('(prefers-color-scheme: dark)');
+    const onChange = () => { if (getTheme() === 'system') applyTheme('system'); };
+    if (mq.addEventListener) mq.addEventListener('change', onChange);
+    else if (mq.addListener) mq.addListener(onChange);
+  }
   window.addEventListener('hashchange', route);
   document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden') flush(); });
   window.addEventListener('pagehide', flush);
