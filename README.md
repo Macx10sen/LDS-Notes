@@ -12,6 +12,10 @@ A phone app for taking notes at church. Its layout follows a paper note-taking n
 
 Sunday and Meeting notes also have a date, time and location. A Daily Study note has a "Week of" date (starting Monday) and opens to today's tab. When **General Conference** is checked, the Session choices change to Saturday Morning / Afternoon / Evening and Sunday Morning / Afternoon.
 
+## Hear Him
+
+A quick journal for promptings during the day. Type a line in the **Hear Him** box on the home screen and tap **Save**. It's stamped with the time. The Hear Him page lists every prompting by day; you can edit them, check **Acted on**, or delete them. Long-press the app icon and choose **Hear Him** to open straight to the box. Promptings are included in backups.
+
 ## Features
 
 - Saves as you type, and works offline once it has been opened (no signal needed in the chapel).

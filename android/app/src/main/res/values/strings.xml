@@ -1,4 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">LDNotebook</string>
+    <string name="shortcut_hear_him">Hear Him</string>
+    <string name="shortcut_hear_him_long">Write down a prompting</string>
 </resources>

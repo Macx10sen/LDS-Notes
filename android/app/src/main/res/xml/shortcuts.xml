@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Long-press the app icon: "Hear Him" opens straight to writing a prompting. -->
+<shortcuts xmlns:android="http://schemas.android.com/apk/res/android">
+    <shortcut
+        android:shortcutId="hear_him"
+        android:enabled="true"
+        android:icon="@mipmap/ic_launcher"
+        android:shortcutShortLabel="@string/shortcut_hear_him"
+        android:shortcutLongLabel="@string/shortcut_hear_him_long">
+        <intent
+            android:action="android.intent.action.VIEW"
+            android:targetPackage="com.macx10sen.ldnotebook"
+            android:targetClass="com.macx10sen.ldnotebook.MainActivity"
+            android:data="https://macx10sen.github.io/LDS-Notes/#hear-him-new" />
+    </shortcut>
+</shortcuts>
