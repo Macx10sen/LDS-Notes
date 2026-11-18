@@ -150,6 +150,45 @@
     },
   };
 
+  // Hear Him: quick promptings jotted down during the day, kept apart from notes.
+  const PROMPT_KEY = 'churchNotes.promptings.v1';
+  const Prompts = {
+    all() {
+      try {
+        const v = JSON.parse(localStorage.getItem(PROMPT_KEY));
+        return Array.isArray(v) ? v : [];
+      } catch (e) {
+        return [];
+      }
+    },
+    saveAll(list) {
+      try {
+        localStorage.setItem(PROMPT_KEY, JSON.stringify(list));
+        return true;
+      } catch (e) {
+        toast('Could not save — storage is full or unavailable.');
+        return false;
+      }
+    },
+    add(text) {
+      const now = Date.now();
+      const item = { id: uid(), text, created: now, updated: now, done: false };
+      const all = this.all();
+      all.push(item);
+      return this.saveAll(all) ? item : null;
+    },
+    update(id, changes) {
+      const all = this.all();
+      const item = all.find((x) => x.id === id);
+      if (!item) return;
+      Object.assign(item, changes, { updated: Date.now() });
+      this.saveAll(all);
+    },
+    remove(id) {
+      this.saveAll(this.all().filter((x) => x.id !== id));
+    },
+  };
+
   if (navigator.storage && navigator.storage.persist) {
     navigator.storage.persist().catch(() => {});
   }
@@ -286,6 +325,7 @@
   function route() {
     const m = location.hash.match(/^#note-(.+)$/);
     if (m) renderEditor(decodeURIComponent(m[1]));
+    else if (location.hash === '#hear-him' || location.hash === '#hear-him-new') renderHearHim();
     else renderHome();
   }
 
@@ -414,6 +454,7 @@
             )
           )
         ),
+        promptCapture(),
         h('div', { class: 'list-tools' },
           h('input', {
             type: 'search',
@@ -441,6 +482,129 @@
     );
     draw();
     window.scrollTo(0, 0);
+  }
+
+  /* ---------- Hear Him ---------- */
+
+  function fmtWhen(ts) {
+    const d = new Date(ts);
+    const time = d.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' });
+    const today = isoDate(new Date());
+    const yesterday = isoDate(new Date(Date.now() - 86400000));
+    if (isoDate(d) === today) return time;
+    if (isoDate(d) === yesterday) return `Yesterday, ${time}`;
+    return `${d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}, ${time}`;
+  }
+
+  // The quick "write it down" box. On the home screen it also shows the latest
+  // two promptings; on the Hear Him page, onSaved redraws the full list.
+  function promptCapture(opts) {
+    const o = opts || {};
+    const ta = h('textarea', {
+      id: 'prompt-input', rows: 2, 'aria-label': 'New prompting',
+      placeholder: 'What did you feel prompted to do or remember?',
+    });
+    const save = h('button', { type: 'button', class: 'save-btn', disabled: true }, 'Save');
+    const recent = h('div', { class: 'recent-prompts' });
+
+    function drawRecent() {
+      if (o.page) return;
+      const items = Prompts.all().sort((a, b) => b.created - a.created);
+      recent.replaceChildren(...[
+        ...items.slice(0, 2).map((p) => h('a', { class: 'recent-prompt', href: '#hear-him' },
+          h('span', { class: 'prompt-when' }, fmtWhen(p.created)),
+          h('span', { class: 'text' }, p.text))),
+        items.length ? h('a', { class: 'link-btn', href: '#hear-him' }, `All promptings (${items.length}) ›`) : null,
+      ].filter(Boolean));
+    }
+
+    ta.addEventListener('input', () => { autoGrow(ta); save.disabled = !ta.value.trim(); });
+    save.addEventListener('click', () => {
+      const text = ta.value.trim();
+      if (!text || !Prompts.add(text)) return;
+      ta.value = '';
+      autoGrow(ta);
+      save.disabled = true;
+      toast('Saved to Hear Him.');
+      drawRecent();
+      if (o.onSaved) o.onSaved();
+    });
+    drawRecent();
+    requestAnimationFrame(() => autoGrow(ta));
+
+    return h('section', { class: 'hear-capture band', 'aria-label': 'Hear Him' },
+      h('div', { class: 'field-head' }, h('h3', { class: 'label' }, o.page ? 'New prompting' : 'Hear Him')),
+      h('p', { class: 'hint' }, 'Jot down a prompting as it comes, wherever you are.'),
+      h('div', { class: 'lined' }, ta),
+      h('div', { class: 'capture-actions' }, save),
+      recent
+    );
+  }
+
+  function renderHearHim() {
+    leaveEditor();
+    document.title = 'Hear Him · Latter Day Notebook';
+    const list = h('div', { class: 'prompt-list' });
+
+    function draw() {
+      const items = Prompts.all().sort((a, b) => b.created - a.created);
+      if (!items.length) {
+        list.replaceChildren(h('p', { class: 'empty' }, 'No promptings yet. Write one above whenever you feel one.'));
+        return;
+      }
+      const groups = [];
+      for (const p of items) {
+        const day = isoDate(new Date(p.created));
+        if (!groups.length || groups[groups.length - 1].day !== day) groups.push({ day, items: [] });
+        groups[groups.length - 1].items.push(p);
+      }
+      list.replaceChildren(...groups.map((g) => h('section', { class: 'prompt-day' },
+        h('h3', { class: 'label prompt-day-title' }, fmtDate(g.day, true)),
+        g.items.map((p) => {
+          const ta = h('textarea', { rows: 1, 'aria-label': 'Prompting', value: p.text });
+          ta.addEventListener('input', () => { autoGrow(ta); Prompts.update(p.id, { text: ta.value }); });
+          const item = h('article', { class: 'prompt' + (p.done ? ' done' : '') },
+            h('div', { class: 'prompt-top' },
+              h('span', { class: 'prompt-time' },
+                new Date(p.created).toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' })),
+              checkItem('Acted on', !!p.done, (on) => {
+                Prompts.update(p.id, { done: on });
+                item.classList.toggle('done', on);
+              }),
+              h('button', {
+                type: 'button', class: 'icon-btn remove', 'aria-label': 'Delete this prompting',
+                onclick: (e) => armed(e.currentTarget, 'Delete?', () => { Prompts.remove(p.id); draw(); }),
+              }, '×')
+            ),
+            h('div', { class: 'lined' }, ta)
+          );
+          return item;
+        })
+      )));
+      list.querySelectorAll('textarea').forEach(autoGrow);
+    }
+
+    const capture = promptCapture({ page: true, onSaved: draw });
+    app.replaceChildren(
+      h('header', { class: 'editor-bar' },
+        h('a', { href: '#home', class: 'back' }, '‹ Notes'),
+        h('span', { class: 'status' }, ''),
+        h('span', { class: 'bar-spacer', 'aria-hidden': 'true' })
+      ),
+      h('div', { class: 'editor' },
+        h('h2', { class: 'display page-title' }, 'Hear Him'),
+        h('p', { class: 'sub hear-sub' }, 'Promptings, written down as they come.'),
+        capture,
+        list
+      )
+    );
+    draw();
+    window.scrollTo(0, 0);
+    // Opened from the "Hear Him" app shortcut: go straight to typing.
+    if (location.hash === '#hear-him-new') {
+      history.replaceState(null, '', '#hear-him');
+      requestAnimationFrame(() => document.getElementById('prompt-input').focus());
+    }
   }
 
   /* ---------- appearance ---------- */
@@ -516,9 +680,10 @@
 
   function exportBackup() {
     const notes = Store.all();
-    if (!notes.length) { toast('There are no notes to back up yet.'); return; }
+    const promptings = Prompts.all();
+    if (!notes.length && !promptings.length) { toast('There are no notes to back up yet.'); return; }
+    const json = JSON.stringify({ app: 'latter-day-notebook', version: 2, exported: new Date().toISOString(), notes, promptings }, null, 2);
     if (native()) {
-      const json = JSON.stringify({ app: 'latter-day-notebook', version: 1, exported: new Date().toISOString(), notes }, null, 2);
       const ok = native().shareFile(`latter-day-notebook-backup-${isoDate(new Date())}.json`, 'application/json', json);
       if (!ok) toast('Could not create the backup file.');
       return;
@@ -527,7 +692,6 @@
       toast('Backups work in the installed app, not in this preview.');
       return;
     }
-    const json = JSON.stringify({ app: 'latter-day-notebook', version: 1, exported: new Date().toISOString(), notes }, null, 2);
     const base = `latter-day-notebook-backup-${isoDate(new Date())}`;
 
     // Prefer the share sheet (Save to Files, Drive, email…). Android only shares
@@ -574,6 +738,18 @@
       const parsed = JSON.parse(text);
       const incoming = Array.isArray(parsed) ? parsed : parsed.notes;
       if (!Array.isArray(incoming)) throw new Error('bad file');
+      // Promptings (backups from before Hear Him don't have any).
+      let promptsAdded = 0;
+      if (parsed && Array.isArray(parsed.promptings)) {
+        const mine = Prompts.all();
+        for (const p of parsed.promptings) {
+          if (!p || !p.id || typeof p.text !== 'string') continue;
+          const i = mine.findIndex((x) => x.id === p.id);
+          if (i < 0) { mine.push(p); promptsAdded++; }
+          else if ((p.updated || 0) > (mine[i].updated || 0)) mine[i] = p;
+        }
+        Prompts.saveAll(mine);
+      }
       const all = Store.all();
       let added = 0;
       let updated = 0;
@@ -584,7 +760,8 @@
         else if ((n.updated || 0) > (all[i].updated || 0)) { all[i] = n; updated++; }
       }
       if (Store.saveAll(all)) {
-        toast(`Restored ${added} new note${added === 1 ? '' : 's'}${updated ? `, updated ${updated}` : ''}.`);
+        toast(`Restored ${added} new note${added === 1 ? '' : 's'}${updated ? `, updated ${updated}` : ''}`
+          + `${promptsAdded ? ` and ${promptsAdded} prompting${promptsAdded === 1 ? '' : 's'}` : ''}.`);
         renderHome();
       }
     }).catch(() => toast('That file is not a Latter Day Notebook backup.'));

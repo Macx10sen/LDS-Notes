@@ -68,8 +68,22 @@ public class MainActivity extends Activity {
         if (savedInstanceState != null) {
             webView.restoreState(savedInstanceState);
         } else {
-            webView.loadUrl(START_URL);
+            webView.loadUrl(urlFor(getIntent()));
         }
+    }
+
+    /** The page to open: a shortcut's link (like Hear Him) or the home screen. */
+    static String urlFor(Intent intent) {
+        Uri data = intent != null ? intent.getData() : null;
+        return isAppUrl(data) ? data.toString() : START_URL;
+    }
+
+    @Override
+    protected void onNewIntent(Intent intent) {
+        super.onNewIntent(intent);
+        setIntent(intent);
+        // Already open (single task): a shortcut tap jumps to its page.
+        if (intent.getData() != null) webView.loadUrl(urlFor(intent));
     }
 
     static boolean isAppUrl(Uri uri) {

@@ -577,6 +577,53 @@ button, input, textarea { font: inherit; color: inherit; }
 }
 .block-title { font-size: 24px; margin: 6px 0 0; }
 
+/* Hear Him: quick promptings */
+.hear-capture { margin-top: 20px; display: flex; flex-direction: column; gap: 6px; }
+.hear-capture .hint { margin: 0; }
+.capture-actions { display: flex; justify-content: flex-end; }
+.save-btn {
+  border: 0;
+  background: var(--ink);
+  color: var(--paper);
+  border-radius: 999px;
+  padding: 8px 20px;
+  font-size: 15px;
+  cursor: pointer;
+}
+.save-btn:disabled { opacity: 0.35; cursor: default; }
+.recent-prompts { display: flex; flex-direction: column; gap: 6px; }
+.recent-prompts:empty { display: none; }
+.recent-prompt {
+  display: flex;
+  gap: 10px;
+  align-items: baseline;
+  padding: 8px 10px;
+  border-radius: 8px;
+  background: var(--card);
+  color: inherit;
+  text-decoration: none;
+  min-width: 0;
+}
+.recent-prompt .prompt-when { flex: none; font-size: 12px; color: var(--muted); }
+.recent-prompt .text {
+  font-family: var(--serif);
+  font-size: 16px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0;
+}
+.recent-prompts .link-btn { align-self: flex-start; padding: 2px 0; }
+.bar-spacer { width: 64px; }
+.hear-sub { margin: 10px 0 0; font-family: var(--serif); color: var(--muted); }
+.prompt-list { margin-top: 24px; display: flex; flex-direction: column; gap: 22px; }
+.prompt-day-title { padding-bottom: 6px; border-bottom: 1.5px solid var(--rule-strong); }
+.prompt { padding: 8px 0 4px; border-bottom: 1px dashed var(--rule); }
+.prompt-top { display: flex; align-items: center; gap: 12px; }
+.prompt-time { font-size: 13px; color: var(--muted); min-width: 4.5em; font-variant-numeric: tabular-nums; }
+.prompt-top .check { flex: 1; font-size: 12px; min-height: 36px; }
+.prompt.done textarea { color: var(--muted); }
+
 /* Study week: one tab per day */
 .block-tabs.day-tabs button {
   position: relative;
